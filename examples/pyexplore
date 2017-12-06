@@ -1,0 +1,32 @@
+#!/bin/bash
+# Explore python modules and namespaces with fzf
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+
+die() {
+    echo >&2 "$*"
+    exit 1
+}
+
+if [ "$#" = "0" -o  "$#" = "1" ];  then
+    fzf-tree --separator . "${1:-}" "$0" children --preview "$0 preview" ;
+elif [ "$1" = "children" ]; then
+    if [ "$2" == "" ]; then
+        npcli -m pkgutil '[x[1] for x in pkgutil.iter_modules()]' -m pkgutil ;
+    else
+        echo "$2" | sed 's/^\.//' | xargs -I ARG npcli -m "ARG" "dir(ARG)"
+    fi;
+elif [ "$1" = "preview" ]; then
+    echo $2 | sed 's/^\.//' | sed 's/\.[^.]*//' | { read parent
+        echo "$2" | sed 's/^\.//' | xargs npcli -m "$parent" --repr
+        echo
+        echo "$2" | sed 's/^\.//' | xargs pydoc
+    }
+else
+    die "Too many arguments"
+fi;
+
+
