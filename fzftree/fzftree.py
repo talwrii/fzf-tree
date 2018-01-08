@@ -6,6 +6,9 @@ import sys
 PARSER = argparse.ArgumentParser(description='')
 PARSER.add_argument('--separator', type=str, help='How to join path components', default='/')
 PARSER.add_argument('--preview', type=str, help='Show a preview of nodes with this command')
+PARSER.add_argument(
+    '--shell', action='store_true', default=False,
+    help='Use shell to execute get_children. {} is replaced with current path.')
 PARSER.add_argument('root', type=str, help='Where to start searching from')
 PARSER.add_argument(
     'get_children', type=str,
@@ -38,7 +41,14 @@ def main():
     path = [args.root.encode('utf8')]
     while True:
         separator = args.separator.encode('utf8')
-        children = subprocess.check_output(args.get_children + [separator.join(path)])
+        if args.shell:
+            children = subprocess.check_output(
+                ' '.join(args.get_children)
+                .format(separator.join(path).decode('utf8'))
+                .encode('utf8'), shell=True)
+        else:
+            children = subprocess.check_output(args.get_children + [separator.join(path)])
+
         ACTIONS = [UP_CHILD, SELECT_CHILD]
         path_bytes = separator.join(path)
         preview_args = [b'--preview', args.preview.encode('utf8') + b' %s%s{}' % (path_bytes, separator)] if args.preview else []
